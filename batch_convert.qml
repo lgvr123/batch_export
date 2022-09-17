@@ -612,6 +612,13 @@ MuseScore {
                 Layout.preferredWidth: 400
                 id: exportStructure
                 text: ""
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Allowed keywords")+":\n"+
+                    "%TITLE%\n%LYRICIST%\n%COMPOSER%\n%ARRANGER%\n%WORKNUMBER%\n%MOVEMENTNUMBER%\n%MOVEMENTTITLE%\n%YEAR%\n%PART%\n"
+                    + "%1: %*?\"<>:|".arg(qsTr("Any character except"))+"\n"
+                    + "%1: /".arg(qsTr("Folder separator"))
+                    ;
+
                 enabled: useExportStructure.valid
                 }
             SmallCheckBox {
@@ -621,7 +628,7 @@ MuseScore {
                 property var valid: useExportStructure.valid && includeMissingProperty.checked
                 text: qsTr("With missing properties")+":"
                 ToolTip.visible: hovered
-                ToolTip.text: qsTr("Include files with missing properties, and replace them by a keyword such as \"unspecified\".")
+                ToolTip.text: qsTr("Include the files with missing properties, and replace these properties by a keyword such as \"unspecified\".")
                 } // includeMissingProperty
             TextField {
                 Layout.preferredWidth: 200
@@ -1154,8 +1161,8 @@ MuseScore {
                 console.log("--composer: "+thisScore.composer);
                 console.log("--arranger: "+thisScore.metaTag("arranger"));
                 console.log("--workNumber: "+thisScore.metaTag("workNumber"));
-                console.log("--mouvementNumber: "+thisScore.metaTag("mouvementNumber"));
-                console.log("--mouvementTitle: "+thisScore.metaTag("mouvementTitle"));
+                console.log("--movementNumber: "+thisScore.metaTag("movementNumber"));
+                console.log("--movementTitle: "+thisScore.metaTag("movementTitle"));
                 console.log("--creation year: "+Qt.formatDate(new Date(thisScore.metaTag("creationDate")),"yyyy"));
 
 
@@ -1169,8 +1176,8 @@ MuseScore {
                     sub=buildExportPath(sub,/%composer%/i,thisScore.composer);
                     sub=buildExportPath(sub,/%arranger%/i,thisScore.metaTag("arranger"));
                     sub=buildExportPath(sub,/%worknumber%/i,thisScore.metaTag("workNumber"));
-                    sub=buildExportPath(sub,/%mouvementnumber%/i,thisScore.metaTag("mouvementNumber"));
-                    sub=buildExportPath(sub,/%mouvementtitle%/i,thisScore.metaTag("mouvementTitle"));
+                    sub=buildExportPath(sub,/%movementnumber%/i,thisScore.metaTag("movementNumber"));
+                    sub=buildExportPath(sub,/%movementtitle%/i,thisScore.metaTag("movementTitle"));
                     sub=buildExportPath(sub,/%year%/i, Qt.formatDate(new Date(thisScore.metaTag("creationDate")),"yyyy"));
 
                     targetPath += sub + "/" ;
@@ -1475,7 +1482,7 @@ MuseScore {
             exportStructure.text=exportStructure.text.trim(); // delete starting and trailing spaces
 
             var check1 = /\/\//;
-            var check2 = /^((%COMPOSER%|%TITLE%|%YEAR%|%WORKNUMBER%|%LYRICIST%|%ARRANGER%|%MOUVEMENTNUMBER%|%MOUVEMENTTITLE%|%PART%)([^:\\/%*?"<>|]*\/?[^:\\/%*?"<>|]*)*)+$/i
+            var check2 = /^((%COMPOSER%|%TITLE%|%YEAR%|%WORKNUMBER%|%LYRICIST%|%ARRANGER%|%MOVEMENTNUMBER%|%MOVEMENTTITLE%|%PART%)([^:\\/%*?"<>|]*\/?[^:\\/%*?"<>|]*)*)+$/i
 
 
 
