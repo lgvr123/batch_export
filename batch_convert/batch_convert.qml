@@ -8,11 +8,6 @@ import Qt.labs.settings 1.0
 import QtQml 2.8
 import MuseScore 3.0
 import FileIO 3.0
-import "batch_convert"
-
-/**
-    //TODO : translations
-*/
 
 MuseScore {
     menuPath: "Plugins." + qsTr("Batch Convert") // this doesn't work, why?
@@ -57,7 +52,8 @@ MuseScore {
     // `width` and `height` allegedly are not valid property names, works regardless and seems needed?!
     width: mainRow.childrenRect.width + mainRow.anchors.margins*2
     height: mainRow.childrenRect.height + mainRow.anchors.margins*2
-    
+
+
     // Mutally exclusive in/out formats, doesn't work properly
     ButtonGroup  { id: mscz }
     ButtonGroup  { id: mscx }
@@ -81,12 +77,14 @@ MuseScore {
             Layout.alignment: Qt.AlignTop | Qt.AlignLeft
             Layout.column: 0
             Layout.row: 0
-            Layout.rowSpan: 2
+            Layout.rowSpan: 1
             //flat: true // no effect?!
             //checkable: true // no effect?!
             property var extensions: new Array
-            Column {
+            Grid {
                 spacing: 0
+                columns: 2
+                flow: Flow.TopToBottom
                 SmallCheckBox {
                     id: inMscz
                     text: "*.mscz"
@@ -331,8 +329,10 @@ MuseScore {
             Layout.margins: 10
             title: " " + qsTr("Output Formats") + " "
             property var extensions: new Array
-            Column {
+            Grid {
                 spacing: 0
+                columns: 2
+                flow: Flow.TopToBottom
                 SmallCheckBox {
                     id: outMscz
                     text: "*.mscz"
@@ -515,8 +515,9 @@ MuseScore {
 
         GridLayout {
             Layout.row: 1
-            Layout.column: 1
-            Layout.columnSpan: 2
+            Layout.column: 0
+            Layout.columnSpan: 3
+            Layout.margins: 10
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignTop | Qt.AlignLeft
@@ -527,7 +528,7 @@ MuseScore {
             SmallCheckBox {
                 id: exportExcerpts
                 Layout.columnSpan: 2
-                text: /*qsTr("Export linked parts")*/ qsTranslate("action", "Export parts")
+                text: qsTr("Export parts")
                 enabled: (mscoreMajorVersion == 3 && mscoreMinorVersion > 0 || (mscoreMinorVersion == 0 && mscoreUpdateVersion > 2)) ? true : false // MuseScore > 3.0.2
                 visible: enabled //  hide if not enabled
             } // exportExcerpts
@@ -670,12 +671,12 @@ MuseScore {
                     } // onClicked
                 } // openLog
 
-                Item { // spacer 
+                Item { // spacer
                     id: spacer
                     implicitHeight: 10
                     Layout.fillWidth: true
                 }
-                    
+
                 Button {
                     id: preview
                     text: qsTr("Preview")
@@ -1051,15 +1052,15 @@ MuseScore {
             var fileName = curScoreInfo[2]
             var srcModifiedTime = curScoreInfo[3]
             var targetPath=curScoreInfo[4];
-            
+
             var missing =  (includeMissingProperty.checked)?missingPropertyDefault.text:undefined;
 
             // - create full file path for part
             var targetBase = buildExportPath(targetPath,/%part%/i,"parts",missing);
             var logTargetName = (targetBase.startsWith(exportToPath))?targetBase.substring(exportToPath.length):targetBase;
-            
+
             var doExport = true;
-            
+
             // - checking if the path is complete
             // if it contains still %, it means that they were some missing properties that we haven't replaced by an "unspecified" text
             if (targetBase.replace(/%format%/gi,"").includes("%")) {
@@ -1067,7 +1068,7 @@ MuseScore {
                 doExport=false;
             }
 
-            
+
             if (doExport) {
                 // - write for all target formats
                 targetBase = targetBase + fileName + "-" + createDefaultFileName(partTitle) + "."
@@ -1088,8 +1089,7 @@ MuseScore {
                     if (convert && !fileExcerpt.exists() ) {
                         resultText.append("  "+qsTr("Folder not available")+": %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Not exported")));
                         continue;
-                    } 
-
+                    }
                     // get modification time of destination file (if it exists)
                     // modifiedTime() will return 0 for non-existing files
                     // if src is newer than existing write this file
@@ -1105,7 +1105,7 @@ MuseScore {
                     else // file already up to date
                             resultText.append("  %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Up to date")))
                 }
-            
+
             }
 
             view.ScrollBar.horizontal.position = 0
@@ -1151,7 +1151,7 @@ MuseScore {
             // read file
             var isCurScore = false;
             var thisScore = readScore(fileFullPath, true)
-            
+
             // make sure we have a valid score
             if (!thisScore) {
                 var opened=scores;
@@ -1207,7 +1207,7 @@ MuseScore {
                 var logTargetName = (targetBase.startsWith(exportToPath))?targetBase.substring(exportToPath.length):targetBase;
 
                 var doExport = true;
-                
+
                 // - checking if the path is complete
                 // if it contains still %, it means that they were some missing properties that we haven't replaced by an "unspecified" text
                 if (targetBase.replace(/%format%/gi,"").includes("%")) {
@@ -1232,8 +1232,7 @@ MuseScore {
                         if (convert && !fileScore.exists() ) {
                             resultText.append(qsTr("Folder not available")+": %1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Not exported")))
                             continue;
-                        } 
-
+                        }
                         fileScore.source =  dest;
                         logTargetName = (fileScore.source.startsWith(exportToPath))?fileScore.source.substring(exportToPath.length):fileScore.source;
 
@@ -1251,7 +1250,7 @@ MuseScore {
                         else
                             resultText.append("%1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Up to date")))
                     }
-                
+
                     // check if we are supposed to export parts
                     if (exportExcerpts.checked) {
                         // reset list
@@ -1296,10 +1295,10 @@ MuseScore {
         }
         return dest.replace(tag,value);
     }
-    
+
     function mkdir(qproc, path) {
         var cmd;
-        
+
         // Platform-based command
         switch (Qt.platform.os) {
         case "windows":
@@ -1310,7 +1309,7 @@ MuseScore {
             // console.log("-- MKDIR CMD : Unsported platform (" + Qt.platform.os + ")");
             // return false;
         }
-        
+
         // Execution
         var res = false;
         console.log("-- MKDIR CMD: " + cmd);
