@@ -436,7 +436,8 @@ MuseScore {
                         if (checked && inMusicXml.checked)
                             inMusicXml.checked = false
                     }
-                    tooltip: mscoreMajorVersion > 3 || (mscoreMajorVersion == 3 && mscoreMinorVersion > 5)
+                    ToolTip.visible: hovered
+                    ToolTip.text: mscoreMajorVersion > 3 || (mscoreMajorVersion == 3 && mscoreMinorVersion > 5)
                      ? qsTranslate("project/export", "Uncompressed MusicXML files")
                      : qsTranslate("Ms::MuseScore", "Uncompressed MusicXML File")
                 }
@@ -461,7 +462,8 @@ MuseScore {
                         if (checked && inMid.checked)
                             inMid.checked = false
                     }
-                    tooltip: mscoreMajorVersion > 3 ? qsTranslate("project/export", "MIDI files")
+                    ToolTip.visible: hovered
+                    ToolTip.text: mscoreMajorVersion > 3 ? qsTranslate("project/export", "MIDI files")
                      : qsTranslate("Ms::MuseScore", "Standard MIDI File") // "MIDI"?
                 }
                 SmallCheckBox {
