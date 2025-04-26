@@ -30,6 +30,8 @@ import FileIO 3.0
 /*  4.3.1: New optin to rename the files
 /*  4.3.1: mei support in 4.2
 /*  4.3.2: prepare for 4.4
+/*  4.3.3: improved help
+/*  4.3.3: indicate when a file will be replaced
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + qsTr("Batch Convert")
@@ -834,7 +836,7 @@ MuseScore {
                     text: ""
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Allowed keywords") + ":\n" +
-                    "%FORMAT%\n%TITLE%\n%LYRICIST%\n%COMPOSER%\n%ARRANGER%\n%WORKNUMBER%\n%MOVEMENTNUMBER%\n%MOVEMENTTITLE%\n%YEAR%\n%PART%\n"
+                    "%FORMAT%\n%TITLE%\n%LYRICIST%\n%COMPOSER%\n%ARRANGER%\n%WORKNUMBER%\n%MOVEMENTNUMBER%\n%MOVEMENTTITLE%\n%SOURCE%\n%YEAR%\n%PART%\n"
                       + "%1: %*?\"<>:|".arg(qsTr("Any character except")) + "\n"
                       + "%1: /".arg(qsTr("Folder separator"));
                     enabled: useExportStructure.valid
@@ -1362,7 +1364,7 @@ MuseScore {
             // - checking if the path is complete
             // if it contains still %, it means that they were some missing properties that we haven't replaced by an "unspecified" text
             if (targetBase.replace(/%format%/gi, "").includes("%")) {
-                resultText.append("  %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Skipped")))
+                appendResult(partTitle,logTargetName,qsTr("Skipped"));
                 doExport = false;
             }
 
@@ -1385,7 +1387,7 @@ MuseScore {
                     }
 
                     if (convert && !fileExcerpt.exists()) {
-                        resultText.append("  " + qsTr("Folder not available") + ": %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Not exported")));
+                        appendResult(partTitle,logTargetName,qsTr("Not exported"),qsTr("Folder not available") + ":");
                         continue;
                     }
                     // get modification time of destination file (if it exists)
@@ -1393,14 +1395,30 @@ MuseScore {
                     // if src is newer than existing write this file
                     fileExcerpt.source = dest;
                     logTargetName = (fileExcerpt.source.startsWith(exportToPath)) ? fileExcerpt.source.substring(exportToPath.length) : fileExcerpt.source;
+                    var _extra="";
+                    var _status="?"
                     if (srcModifiedTime > fileExcerpt.modifiedTime()) {
                         var res = convert ? writeScore(thisScore, fileExcerpt.source, outFormats.extensions[j]) : true;
-                        if (res)
-                            resultText.append("  %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(convert ? qsTr("Exported") : qsTr("Will be exported")));
-                        else
-                            resultText.append("  " + qsTr("Error") + ": %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Not exported")))
+                        if (res) {
+                            if (convert) {
+                                _status=qsTr("Exported");
+                            } else if (fileExcerpt.exists()) {
+                                 _status=qsTr("Will be replaced");
+                            } else {
+                                 _status=qsTr("Will be exported");
+                            }
+                        }
+                        else {
+                            _status=qsTr("Not exported");
+                            _extra=qsTr("Error") + ":";
+                            
+                        }
                     } else // file already up to date
-                        resultText.append("  %1 → %2 - %3".arg(partTitle).arg(logTargetName).arg(qsTr("Up to date")));
+                        _status=qsTr("Up to date");
+
+                    appendResult(partTitle,logTargetName,_status,_extra);
+
+
                 }
 
             }
@@ -1418,6 +1436,12 @@ MuseScore {
             }
         }
     }
+    
+    function appendResult(partTitle,targetName,status,extra) {
+        if (typeof extra === "undefined") extra="";
+        resultText.append("  %4%1 → %2 - %3".arg(partTitle).arg(targetName).arg(status).arg(extra));
+    }
+    
     Timer {
         id: processTimer
         interval: 1
@@ -1529,6 +1553,7 @@ MuseScore {
                 console.log("--workNumber: "+thisScore.metaTag("workNumber"));
                 console.log("--movementNumber: "+thisScore.metaTag("movementNumber"));
                 console.log("--movementTitle: "+thisScore.metaTag("movementTitle"));
+                console.log("--source: "+thisScore.metaTag("source"));
                 console.log("--creation year: "+Qt.formatDate(new Date(thisScore.metaTag("creationDate")),"yyyy"));
 
 
@@ -1549,6 +1574,7 @@ MuseScore {
                     sub=buildExportPath(sub,/%worknumber%/i,thisScore.metaTag("workNumber"),missing);
                     sub=buildExportPath(sub,/%movementnumber%/i,thisScore.metaTag("movementNumber"),missing);
                     sub=buildExportPath(sub,/%movementtitle%/i,thisScore.metaTag("movementTitle"),missing);
+                    sub=buildExportPath(sub,/%source%/i,thisScore.metaTag("source"),missing);
                     sub=buildExportPath(sub,/%year%/i, Qt.formatDate(new Date(thisScore.metaTag("creationDate")),"yyyy"),missing);
 
                     targetPath += sub + "/" ;
@@ -1558,11 +1584,13 @@ MuseScore {
                 var logTargetName = (targetBase.startsWith(exportToPath))?targetBase.substring(exportToPath.length):targetBase;
 
                 var doExport = true;
+                
+                resultText.append("%1".arg(logSourceName));
 
                 // - checking if the path is complete
                 // if it contains still %, it means that they were some missing properties that we haven't replaced by an "unspecified" text
                 if (targetBase.replace(/%format%/gi,"").includes("%")) {
-                    resultText.append("%1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Skipped")))
+                    appendResult("score",logTargetName,qsTr("Skipped"));
                     doExport=false;
                 }
 
@@ -1598,7 +1626,7 @@ MuseScore {
 
                         if (convert && !fileScore.exists() ) {
                             console.log("Failed to create "+fileScore.source+"\nBypassing this file.");
-                            resultText.append(qsTr("Folder not available")+": %1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Not exported")))
+                            appendResult("score",logTargetName,qsTr("Not exported"),qsTr("Folder not available") + ":");
                             continue;
                         }
                         fileScore.source =  dest;
@@ -1606,26 +1634,40 @@ MuseScore {
 
                         var hasExcerpts = (thisScore.excerpts.length>0)
 
+                        var _extra="";
+                        var _status="?";
 
                         if (rdbExpPartsOnly.checked && hasExcerpts) {
                             // Export only the parts ( <=> there are parts)
                             // => log as "not applicable"
-                            resultText.append("%1 - %2".arg(logSourceName).arg(qsTr("n/a")))
+                            resultText.append("%1 - %2".arg("socre").arg(qsTr("n/a")))
                         } else if (srcModifiedTime > fileScore.modifiedTime()) {
                             // Export the score or export the parts only but there are no parts
                             // if an the current score is more recent than the last export
                             // => export
                             var res = convert ? writeScore(thisScore, fileScore.source, outFormats.extensions[j]) : true
 
-                            if (res)
-                                resultText.append("%1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(convert?qsTr("Exported"):qsTr("Will be exported")))
-                            else
-                                resultText.append(qsTr("Error")+": %1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Not exported")))
+                            if (res) {
+                                if (convert) {
+                                    _status = qsTr("Exported");
+                                } else if (fileScore.exists()) {
+                                    _status = qsTr("Will be replaced");
+                                } else {
+                                    _status = qsTr("Will be exported");
+                                }
+                            } else {
+                                _status=qsTr("Not exported");
+                                _extra=qsTr("Error") + ":";
+                            }
                         }
-                        else
+                        else {
                             // Export the score, and the current score is older/same as the last export
                             // => Log as up to date
-                            resultText.append("%1 → %2 - %3".arg(logSourceName).arg(logTargetName).arg(qsTr("Up to date")))
+                                _status=qsTr("Up to date");
+                        }
+                            
+                        appendResult(qsTr("score"),logTargetName,_status,_extra);
+
                     }  
 
                     // check if we are supposed to export parts
@@ -1878,7 +1920,7 @@ MuseScore {
             exportStructure.text=exportStructure.text.trim(); // delete starting and trailing spaces
 
             var check1 = /\/\//;
-            var check2 = /^((%FORMAT%|%COMPOSER%|%TITLE%|%YEAR%|%WORKNUMBER%|%LYRICIST%|%ARRANGER%|%MOVEMENTNUMBER%|%MOVEMENTTITLE%|%PART%)([^:\\/%*?"<>|]*\/?[^:\\/%*?"<>|]*)*)+$/i
+            var check2 = /^((%FORMAT%|%COMPOSER%|%TITLE%|%YEAR%|%WORKNUMBER%|%LYRICIST%|%ARRANGER%|%MOVEMENTNUMBER%|%MOVEMENTTITLE%|%SOURCE%|%PART%)([^:\\/%*?"<>|]*\/?[^:\\/%*?"<>|]*)*)+$/i
 
 
 
